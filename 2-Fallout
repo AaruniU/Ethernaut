@@ -1,1 +1,1 @@
-
+Earlier verions of Solidity assumed a function was a constructor if it had the same name as the contract. However, this is a security issue if (1) Contract name gets changed in future and the developer forgets to change the name of the constructor or (2) There is a typo in the constructor name making it just another callable function. In this example the supposed constructor Fal1out() has a typo in the name, making it just another public function that anyone can call to become the owner of the contract.
