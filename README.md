@@ -1,2 +1,2 @@
 # Ethernaut
-My solutions to Ethernaut challenge
+My solutions to the Ethernaut challenge
