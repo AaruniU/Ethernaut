@@ -1,0 +1,3 @@
+State variables declared "private" are hidden from other contracts but their values are still recorded on the blockchain and so can be read by anyone. See this to learn exactly how: https://www.youtube.com/watch?v=Gg6nt3YW74o
+
+In this case, simply reading the value of the private state variable "password" will let you unlock the contract by passing it to unlock().
