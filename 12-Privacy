@@ -1,4 +1,4 @@
-I had to learn Hardhat and Ethers.js to solve this level. Below is the soution written as a Mocha test using Visual Studio Code/Hardhat:
+I had to learn Hardhat and Ethers.js to solve this level. Below is the solution written as a Mocha test using Visual Studio Code/Hardhat:
 
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
