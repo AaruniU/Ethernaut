@@ -1,0 +1,39 @@
+I had to learn Hardhat and Ethers.js to solve this level. Below is the soution written as a Mocha test using Visual Studio Code/Hardhat:
+
+const { expect } = require("chai");
+const { ethers, network } = require("hardhat");
+
+describe("Privacy.sol", () => {
+
+    describe("Run the contract", () => {
+        it("should run fine", async () => {
+
+            // Deploy contract
+            const [owner] = await ethers.getSigners(); 
+            const privacyContract = await ethers.getContractFactory("Privacy");
+            const privacy = await privacyContract.deploy(   [ "0x1122334400000000000000000000000000000000000000000000000000000000"
+                                                            , "0x6162636400000000000000000000000000000000000000000000000000000000"
+                                                            , "0x6456454705645345758465038732049325975465830483444555666777888999"]
+                                                        );
+            await privacy.deployed();
+
+            // Read storage variable at slot 5
+            // Should be 0x6456454705645345758465038732049325975465830483444555666777888999
+            const stor0 = await ethers.provider.getStorageAt(privacy.address, 5);
+            console.log(stor0)
+
+            // Read value of "locked" state variable
+            // 0x0000000000000000000000000000000000000000000000000000000000000001 = true
+            const stor1 = await ethers.provider.getStorageAt(privacy.address, 0);
+            console.log("\n", stor1)
+
+            // bytes16(0x6456454705645345758465038732049325975465830483444555666777888999) = 0x64564547056453457584650387320493
+            await privacy.unlock("0x64564547056453457584650387320493");
+
+            // Read value of "locked" state variable again
+            // 0x0000000000000000000000000000000000000000000000000000000000000000 = false
+            const stor2 = await ethers.provider.getStorageAt(privacy.address, 0);
+            console.log("\n", stor2)
+        });
+    });
+});
