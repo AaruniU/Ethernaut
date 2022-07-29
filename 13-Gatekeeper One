@@ -15,7 +15,7 @@ require(uint32(uint64(_gateKey)) != uint64(_gateKey), "GatekeeperOne: invalid ga
 
 	uint64(0x0000000000002266) = 0x0000000000002266
 	uint32(uint64(0x0000000000002266) = 0x00002266
-	For them to not be equal, we need to make sure the first 4 bytes from left in 0x0000000000002266 are not zeroes
+	For them to not be equal, we need to make sure the first 4 bytes from left in 0x0000000000002266 are not all zeroes
 	So _gateKey = 0x1000000000002266
 	
 require(uint32(uint64(_gateKey)) == uint16(uint64(_gateKey)), "GatekeeperOne: invalid gateThree part one")
